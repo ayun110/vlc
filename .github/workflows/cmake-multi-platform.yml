@@ -1,0 +1,42 @@
+name: Build VLC on Windows
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Setup MSYS2 environment
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          base-devel
+          git
+          mingw-w64-x86_64-toolchain
+          mingw-w64-x86_64-qt5
+          mingw-w64-x86_64-libvorbis
+          mingw-w64-x86_64-libjpeg
+          mingw-w64-x86_64-libpng
+
+    - name: Configure Build
+      run: |
+        ./bootstrap
+        ./configure --host=x86_64-w64-mingw32
+
+    - name: Compile VLC
+      run: make
+
+    - name: Install VLC (optional)
+      run: make install
