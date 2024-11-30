@@ -1,0 +1,46 @@
+name: Build VLC for Windows22
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          update: true
+          install: >-
+            base-devel
+            mingw-w64-x86_64-toolchain
+            git
+            autoconf
+            automake
+            libtool
+            pkg-config
+            cmake
+            make
+            yasm
+            nasm
+            python
+            unzip
+            wget
+
+      - name: Build VLC
+        run: |
+          git clone https://code.videolan.org/videolan/vlc.git
+          cd vlc
+          ./bootstrap
+          mkdir -p build && cd build
+          ../extras/package/win32/configure.sh --host=x86_64-w64-mingw32
+          make
