@@ -1,42 +1,54 @@
-name: Build VLC on Windows
+name: Build VLC for Windows2233
 
 on:
   push:
-    branches:
-      - master
+    branches: [ main ]
   pull_request:
-    branches:
-      - master
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout source code
+        uses: actions/checkout@v3
 
-    - name: Setup MSYS2 environment
-      uses: msys2/setup-msys2@v2
-      with:
-        msystem: MINGW64
-        update: true
-        install: >-
-          base-devel
-          git
-          mingw-w64-x86_64-toolchain
-          mingw-w64-x86_64-qt5
-          mingw-w64-x86_64-libvorbis
-          mingw-w64-x86_64-libjpeg
-          mingw-w64-x86_64-libpng
+      - name: Set up MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            base-devel
+            git
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-pkg-config
+            autoconf
+            automake
+            libtool
+            pkg-config
 
-    - name: Configure Build
-      run: |
-        ./bootstrap
-        ./configure --host=x86_64-w64-mingw32
+      - name: Install VLC dependencies
+        shell: msys2 {0}
+        run: |
+          pacman -S --noconfirm mingw-w64-x86_64-dbus
+          pacman -S --noconfirm mingw-w64-x86_64-qt5
+          # 添加更多依赖项
 
-    - name: Compile VLC
-      run: make
+      - name: Configure VLC
+        shell: msys2 {0}
+        run: |
+          ./bootstrap
+          ./configure --host=x86_64-w64-mingw32 --build=x86_64-pc-msys
 
-    - name: Install VLC (optional)
-      run: make install
+      - name: Build VLC
+        shell: msys2 {0}
+        run: |
+          make -j$(nproc)
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: vlc-windows-build
+          path: build/bin/vlc.exe
